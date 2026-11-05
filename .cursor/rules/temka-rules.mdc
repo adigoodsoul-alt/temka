@@ -1,0 +1,30 @@
+---
+description: Architecture, rules and conventions for the ТЕМЩИК roguelike game
+globs: **/*
+alwaysApply: true
+---
+
+# ТЕМЩИК — Guidelines for Cursor
+
+## Primary Rule: Money = Health (HP)
+- `player.money` is the only vitality metric.
+- No separate HP pool. Losing money means taking damage.
+- `money <= 0` triggers Game Over (Bankruptcy).
+
+## Primary Rule: Zero Combat System
+- No weapon attacks, no swords/guns combat system, no enemy AI loops.
+- Everything is resolved via dialogue choices and RNG d20 dice checks.
+
+## Tech Stack
+- Vanilla ES6 JavaScript (Native browser modules with `.js` extensions in imports).
+- HTML5 Canvas for background ambience & pixel particle effects.
+- Semantic HTML + CSS for UI overlay on `#ui-overlay`.
+- Zero build tools required.
+
+## Key Modules
+- `src/core/GameStateManager.js`: Handles states (`HUB`, `EXPLORATION`, `DIALOGUE`, `GAME_OVER`).
+- `src/core/EventBus.js`: Global events (`STATE_CHANGED`, `MONEY_CHANGED`, `PLAYER_DAMAGED`, `PLAYER_REWARDED`, `GAME_OVER`).
+- `src/entities/Player.js`: Holds `money`, `stats: { authority, connections, cunning }`, `rollCheck()`.
+- `src/vfx/PixelFX.js`: Integer-snapped pixel particles, screen shake, hit flash, `createFx(type, x, y, options)`.
+- `src/dialogue/DialogueManager.js`: Manages story events, choices, dice rolls, rewards/losses.
+- `src/ui/UIManager.js`: Renders panels for each state and the persistent top HUD.

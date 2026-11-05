@@ -1,0 +1,36 @@
+# Cursor AI Rules for «ТЕМЩИК» Roguelike
+
+You are working on «ТЕМЩИК» — a pixel roguelike criminal schemer simulator in Vanilla JS and HTML5 Canvas.
+
+## Core Directives & Inviolable Rules
+1. **MONEY IS HP (Health):**
+   - The player's survival resource is ONLY `player.money`.
+   - Never add `player.hp`, `health`, or enemy fighting mechanics.
+   - Any damage decreases money via `player.modifyMoney(-amount, reason)`.
+   - If `money <= 0`, immediately trigger `GAME_OVER`.
+
+2. **NO COMBAT SYSTEM:**
+   - There are NO real-time fights, NO turn-based RPG battles, and NO enemies to attack.
+   - All conflicts, raids, and trades are resolved exclusively through text events, dialogue branching, and d20 dice checks against player stats:
+     `total = d20 + player.stats[statName] + modifier` vs `difficulty`.
+
+3. **TECH STACK CONSTRAINTS:**
+   - 100% Pure Vanilla JS (ES6 Modules) + HTML5 Canvas + Plain CSS.
+   - Do NOT introduce React, Vue, TypeScript, Tailwind, Webpack, or npm dependencies unless explicitly requested.
+   - Code must run directly in the browser via native ES6 imports over a simple HTTP server (`python -m http.server 3000`).
+
+4. **PIXEL ART & VFX (PixelFX):**
+   - Follow SpriteFusion / pixelfx guidelines:
+     - Always snap coordinates to the pixel grid (`Math.floor(x / pixelSize) * pixelSize`).
+     - No subpixel anti-aliasing on particles.
+     - Particle types: chunky square shards, rectangular tumbling coins, 4-pointed sparkle crosses (`+`), and shockwave rings.
+     - Pair actions with screen juice: Screen Shake (`shakeScreen(intensity, duration)`) and Hit Flash (`flashScreen(color, duration)`).
+     - Trigger effects via `createFx(type, x, y, options)`.
+
+5. **ARCHITECTURE:**
+   - State Machine: `GameStateManager.js` handles `HUB`, `EXPLORATION`, `DIALOGUE`, `GAME_OVER`.
+   - Communication: `EventBus.js` (Pub/Sub) to keep `Player`, `UIManager`, and `DialogueManager` loosely coupled.
+   - UI: `#ui-overlay` renders HTML on top of the fullscreen Canvas (`#game-canvas`).
+
+6. **TONE & SETTING:**
+   - Gritty post-soviet criminal/hustler underworld: drop-cards, 115-FZ bank blocks, OBEP police raids, Moscow-City crypto OTC deals, dirty cash, lawyers, VPNs, dark pixel-neon aesthetic.
