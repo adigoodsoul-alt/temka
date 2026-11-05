@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ТЕМЩИК — Симулятор криминального авантюриста (Roguelike MVP)</title>
+  <link rel="stylesheet" href="./css/style.css" />
+</head>
+<body>
+
+  <!-- Полноэкранный Canvas для фонового рендера и сочных пиксельных VFX (PixelFX) -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Контейнер для UI: поверх Canvas, пропускает клики кроме интерактивных окон -->
+  <div id="ui-overlay"></div>
+
+  <!-- Главный модуль игры (ES6) -->
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
