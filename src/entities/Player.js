@@ -31,6 +31,8 @@ export class Player {
 
     this.reputation = 50; // 0..100 (нейтральная репутация на районе)
     this.daysSurvived = 1;
+    this.maxDays = 30;
+    this.targetMoney = 1000000;
   }
 
   /**
@@ -120,6 +122,29 @@ export class Player {
       difficulty,
       margin: total - difficulty
     };
+  }
+
+  /**
+   * Завершить день, списать ренту и проверить условия победы/поражения
+   */
+  advanceDay() {
+    this.daysSurvived++;
+    
+    // Ежедневные траты на конспирацию и жизнь
+    this.modifyMoney(-3000, 'Ежедневная рента и расходы на конспирацию');
+
+    if (!this.isAlive()) return; // Если умер от ренты, modifyMoney уже вызвал GAME_OVER
+
+    // Проверка победы
+    if (this.money >= this.targetMoney) {
+      events.emit('GAME_WIN', { reason: 'Вы собрали 1 000 000 ₽ и готовы улететь в Дубай!' });
+      return;
+    }
+
+    // Проверка таймера (поражение)
+    if (this.daysSurvived > this.maxDays) {
+      events.emit('GAME_OVER', { reason: 'Прошло 30 дней, а миллиона нет. Кредиторы вас нашли.' });
+    }
   }
 
   /**

@@ -55,14 +55,22 @@ export class UIManager {
     });
 
     events.on('DIALOGUE_END', () => {
-      // Возвращаемся в предыдущее состояние (или EXPLORATION)
-      if (this.player.isAlive()) {
+      // Ивенты тратят 1 день и списывают ренту
+      this.player.advanceDay();
+      
+      // Если после списания ренты и проверок игрок еще в игре, возвращаем на карту
+      const state = this.gsm.getState();
+      if (this.player.isAlive() && state !== GameStates.WIN && state !== GameStates.GAME_OVER) {
         this.gsm.setState(GameStates.EXPLORATION);
       }
     });
 
     events.on('GAME_OVER', ({ reason }) => {
       this.gsm.setState(GameStates.GAME_OVER, { reason });
+    });
+
+    events.on('GAME_WIN', ({ reason }) => {
+      this.gsm.setState(GameStates.WIN, { reason });
     });
   }
 
@@ -82,7 +90,8 @@ export class UIManager {
       [GameStates.HUB]: '🏠 УБЕЖИЩЕ',
       [GameStates.EXPLORATION]: '🗺️ ВЫЛАЗКА В ГОРОД',
       [GameStates.DIALOGUE]: '💬 ТЕМКА / ИВЕНТ',
-      [GameStates.GAME_OVER]: '💀 БАНКРОТСТВО'
+      [GameStates.GAME_OVER]: '💀 БАНКРОТСТВО',
+      [GameStates.WIN]: '🏆 ПОБЕДА'
     };
 
     const currentState = this.gsm.getState();
@@ -93,6 +102,9 @@ export class UIManager {
         <div class="hud-logo">
           <span class="pixel-badge">ТЕМЩИК v0.1</span>
         </div>
+        <div class="hud-state-pill" style="margin-left: 8px; color: var(--accent-gold);">
+          ДЕНЬ ${this.player.daysSurvived} / ${this.player.maxDays}
+        </div>
         <div class="hud-state-pill" id="hud-state-label">
           ${stateLabels[currentState] || currentState}
         </div>
@@ -101,7 +113,7 @@ export class UIManager {
       <div class="hud-center">
         <!-- БАЛАНС = ХП -->
         <div class="money-container" id="money-container" title="Деньги — это ваша жизнь. Падение до нуля означает Game Over!">
-          <div class="money-label">БАЛАНС (ХП):</div>
+          <div class="money-label">БАЛАНС (ЦЕЛЬ: 1 МЛН ₽):</div>
           <div class="money-value" id="money-display">
             ${this.player.money.toLocaleString('ru-RU')} ₽
           </div>
@@ -183,6 +195,9 @@ export class UIManager {
       case GameStates.GAME_OVER:
         this.renderGameOverView(view, data);
         break;
+      case GameStates.WIN:
+        this.renderWinView(view, data);
+        break;
     }
   }
 
@@ -255,62 +270,55 @@ export class UIManager {
   }
 
   /**
-   * 2. Экран Вылазки (Exploration)
+   * 2. Экран Вылазки (Exploration) с интерактивной картой
    */
   renderExplorationView(container) {
+    const shuffledEvents = [...MOCK_EVENTS].sort(() => 0.5 - Math.random());
+    const activeEvents = shuffledEvents.slice(0, 3);
+
+    const defaultCoords = [
+      { x: '20%', y: '30%' },
+      { x: '70%', y: '40%' },
+      { x: '45%', y: '75%' }
+    ];
+
+    let poisHtml = '';
+    activeEvents.forEach((ev, index) => {
+      const posX = ev.x || defaultCoords[index].x;
+      const posY = ev.y || defaultCoords[index].y;
+
+      poisHtml += `
+        <div class="map-pin" data-event-id="${ev.id}" style="left: ${posX}; top: ${posY};">
+          <div class="pin-icon">${ev.avatar || '📍'}</div>
+          <div class="pin-tooltip">
+            <div class="pin-title">${ev.title}</div>
+            <div class="pin-loc">${ev.location || 'Неизвестно'}</div>
+          </div>
+        </div>
+      `;
+    });
+
     container.innerHTML = `
       <div class="panel exploration-panel">
         <div class="panel-header">
           <h2>📍 ВЫЛАЗКА: КРИМИНАЛЬНЫЙ РАЙОН</h2>
         </div>
         <div class="panel-body">
-          <p class="flavor-text">
-            Город живет своей суетливой жизнью. Патрули ППС, тонированные внедорожники 
-            и неприметные кофейни. Выберите точку интереса для проведения сделки:
-          </p>
-
-          <div class="poi-grid">
-            <div class="poi-card" data-event-id="obep_raid">
-              <div class="poi-icon">🚨</div>
-              <div class="poi-info">
-                <h3>Офис дроповодов</h3>
-                <p>Тревожные сигналы от дроп-менеджеров. Возможна облава силовиков.</p>
-                <span class="poi-badge danger">Высокий риск</span>
-              </div>
-            </div>
-
-            <div class="poi-card" data-event-id="crypto_otc_deal">
-              <div class="poi-icon">💎</div>
-              <div class="poi-info">
-                <h3>Москва-Сити, Башня Федерация</h3>
-                <p>Артур предлагает горячий объем USDT со скидкой 6%.</p>
-                <span class="poi-badge warning">Средний риск</span>
-              </div>
-            </div>
-
-            <div class="poi-card" data-event-id="shady_banker">
-              <div class="poi-icon">🏦</div>
-              <div class="poi-info">
-                <h3>Отделение банка на Ленинском</h3>
-                <p>Заморозка счета по 115-ФЗ. Нужно решить вопрос на месте.</p>
-                <span class="poi-badge info">Проверка связей</span>
-              </div>
-            </div>
+          <p class="flavor-text">Город живет своей суетливой жизнью. Выберите точку на карте для начала дела:</p>
+          <div class="map-container">
+            <div class="map-bg"></div>
+            ${poisHtml}
           </div>
-
-          <div class="exploration-footer">
-            <button class="pixel-btn" id="btn-back-to-hub">
-              🏠 Вернуться в Убежище
-            </button>
+          <div class="exploration-footer" style="margin-top: 24px;">
+            <button class="pixel-btn" id="btn-back-to-hub">🏠 Вернуться в Убежище</button>
           </div>
         </div>
       </div>
     `;
 
-    // Клик по точкам интереса
-    container.querySelectorAll('.poi-card').forEach((card) => {
-      card.addEventListener('click', () => {
-        const eventId = card.getAttribute('data-event-id');
+    container.querySelectorAll('.map-pin').forEach((pin) => {
+      pin.addEventListener('click', () => {
+        const eventId = pin.getAttribute('data-event-id');
         const ev = MOCK_EVENTS.find(e => e.id === eventId) || MOCK_EVENTS[0];
         this.gsm.setState(GameStates.DIALOGUE);
         this.dm.startDialogue(ev);
@@ -452,6 +460,37 @@ export class UIManager {
     `;
 
     document.getElementById('btn-restart-game')?.addEventListener('click', () => {
+      this.player.reset();
+      this.gsm.setState(GameStates.HUB);
+    });
+  }
+
+  /**
+   * 5. Экран Победы (Win)
+   */
+  renderWinView(container, data) {
+    container.innerHTML = `
+      <div class="panel game-over-panel" style="border-color: var(--accent-green); box-shadow: 6px 6px 0px #063d27;">
+        <div class="panel-header" style="background: #063d27; justify-content: center;">
+          <h2 style="color: #ffffff;">🏆 ПОБЕДА! ЭКСИТ СОСТОЯЛСЯ</h2>
+        </div>
+        <div class="panel-body">
+          <div class="game-over-skull" style="font-size: 64px; margin-bottom: 12px;">✈️</div>
+          <p class="flavor-text" style="color: #bbf7d0;">
+            ${data?.reason || 'Вы собрали нужную сумму.'} <br><br>
+            Чемоданы собраны, крипта переведена на холодный кошелек. Вы сидите в бизнес-зале Шереметьево, 
+            ожидая рейс в Дубай. Наконец-то можно выдохнуть.
+          </p>
+          <div class="game-over-actions" style="margin-top: 24px;">
+            <button class="pixel-btn primary large" id="btn-restart-win">
+              🔄 Начать заново (Новая игра)
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.getElementById('btn-restart-win')?.addEventListener('click', () => {
       this.player.reset();
       this.gsm.setState(GameStates.HUB);
     });

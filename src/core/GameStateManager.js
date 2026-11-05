@@ -7,7 +7,8 @@ export const GameStates = Object.freeze({
   HUB: 'HUB',                 // Убежище (Хаб)
   EXPLORATION: 'EXPLORATION', // Локация / Вылазка
   DIALOGUE: 'DIALOGUE',       // Текстовый ивент / Диалог
-  GAME_OVER: 'GAME_OVER'      // Банкротство / Конец игры
+  GAME_OVER: 'GAME_OVER',     // Банкротство / Конец игры
+  WIN: 'WIN'                  // Новое состояние победы
 });
 
 /**
